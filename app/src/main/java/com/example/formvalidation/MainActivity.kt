@@ -1,4 +1,4 @@
-package com.example.formvalidation  // ✅ Use your real package name
+package com.example.formvalidation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
