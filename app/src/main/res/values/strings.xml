@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">FormValidation</string>
+    <string name="welcome_back_to_the_app">welcome back to the app</string>
+
 </resources>
