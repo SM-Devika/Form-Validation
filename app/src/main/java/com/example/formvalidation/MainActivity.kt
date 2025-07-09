@@ -1,40 +1,44 @@
 package com.example.formvalidation
 
-import androidx.compose.foundation.Image
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.layout.ContentScale
-
-import androidx.compose.foundation.shape.RoundedCornerShape
-
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.SpanStyle
-
-
+import android.Manifest
 import android.os.Bundle
-import androidx.compose.ui.text.style.TextAlign
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.Icons
+import androidx.compose.ui.text.withStyle
+import android.os.Build
+import androidx.compose.material.icons.filled.Photo
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -45,14 +49,13 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
 
 
-
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Register : Screen("register")
     object Login : Screen("login")
     object Home : Screen("home")
+    object Permission : Screen("permission")
 }
-
 class UserViewModel : ViewModel() {
     var registeredEmail by mutableStateOf("")
     var registeredPassword by mutableStateOf("")
@@ -79,6 +82,9 @@ class MainActivity : ComponentActivity() {
                     composable(Screen.Home.route) {
                         HomeScreen(navController)
                     }
+                    composable(Screen.Permission.route) {
+                        PermissionScreen(navController)
+                    }
                 }
             }
         }
@@ -89,7 +95,7 @@ class MainActivity : ComponentActivity() {
 fun SplashScreen(navController: NavHostController) {
     LaunchedEffect(Unit) {
         delay(2000)
-        navController.navigate(Screen.Register.route) {
+        navController.navigate(Screen.Permission.route) {
             popUpTo(Screen.Splash.route) { inclusive = true }
         }
     }
@@ -110,7 +116,6 @@ fun SplashScreen(navController: NavHostController) {
 }
 
 @Composable
-
 fun RegisterScreen(navController: NavController, viewModel: UserViewModel) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -337,7 +342,7 @@ fun LoginScreen(navController: NavHostController, viewModel: UserViewModel) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -466,6 +471,78 @@ fun HomeScreen(navController: NavController) {
                     navController.navigate(Screen.Login.route)
                 }
             )
+        }
+    }
+}
+
+
+@Composable
+fun PermissionScreen(navController: NavController) {
+    val context = LocalContext.current
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.entries.all { it.value }
+        if (allGranted) {
+            Toast.makeText(context, "Permissions Granted", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Permissions Denied", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val permissionsToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        arrayOf(
+            Manifest.permission.READ_MEDIA_IMAGES,
+            Manifest.permission.READ_MEDIA_VIDEO
+        )
+    } else {
+        arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.AccountCircle,
+                contentDescription = "Permission Icon",
+                tint = Color(0xFF6A1B9A),
+                modifier = Modifier.size(100.dp)
+            )
+
+            Text(
+                text = "Storage Permission Required",
+                fontSize = 20.sp,
+                color = Color.Black,
+                style = MaterialTheme.typography.headlineSmall
+            )
+
+            Text(
+                text = "We need access to your photos and videos to continue.",
+                color = Color.Gray,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
+            )
+
+            Button(
+                onClick = {
+                    permissionLauncher.launch(permissionsToRequest)
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6A1B9A)),
+                shape = MaterialTheme.shapes.medium,
+                modifier = Modifier
+                    .padding(top = 16.dp)
+                    .height(50.dp)
+            ) {
+                Text("Request Permission", color = Color.White)
+            }
         }
     }
 }
